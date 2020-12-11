@@ -17,6 +17,7 @@ fn main() {
     world.register::<Faction>();
     world.register::<Gun>();
     world.register::<Kill>();
+    world.register::<Modifier>();
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(UpdateTargets, "update_targets", &[])
@@ -29,10 +30,10 @@ fn main() {
 
     dispatcher.setup(&mut world);
 
-    create_player(&mut world, String::from("nastykast"), Faction::Town, Role::Cop);
-    create_player(&mut world, String::from("Red123"), Faction::Mafia, Role::Godfather);
-    create_player(&mut world, String::from("BlueMarble"), Faction::Town, Role::Detective);
-    create_player(&mut world, String::from("TheFranswer"), Faction::Town, Role::Roleblocker);
+    create_player(&mut world, String::from("nastykast"), Faction::Town, Role::Cop, vec![Modifier::Breakthrough]);
+    create_player(&mut world, String::from("Red123"), Faction::Mafia, Role::Godfather, vec![]);
+    create_player(&mut world, String::from("BlueMarble"), Faction::Town, Role::Detective, vec![]);
+    create_player(&mut world, String::from("TheFranswer"), Faction::Town, Role::Roleblocker, vec![]);
     
     dispatcher.dispatch(&mut world);
     world.maintain();

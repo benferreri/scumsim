@@ -41,3 +41,9 @@ pub enum Role {
     Goon,
     Godfather,
 }
+
+#[derive(Component, Clone, Debug, Display)]
+#[storage(VecStorage)]
+pub enum Modifier {
+    Breakthrough,
+}

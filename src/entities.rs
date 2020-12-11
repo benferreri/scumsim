@@ -1,13 +1,16 @@
 use specs::{World,WorldExt,Entity,EntityBuilder,Builder};
-use super::components::{Name,Faction,Target,Position,Role,actions,attributes};
+use super::components::{Name,Faction,Target,Position,Role,Modifier,actions,attributes};
 
 // certain roles will overwrite the faction
 // e.g. if trying to make a Town Goon, a Mafia Goon will instead be returned
-pub fn create_player(world: &mut World, name: String, faction: Faction, role: Role) -> Entity {
+pub fn create_player(world: &mut World, name: String, faction: Faction, role: Role, modifiers: Vec<Modifier>) -> Entity {
     let player = world.create_entity()
         .base_player(name)
         .faction(faction);
-    let player = give_role(player, role);
+    let mut player = give_role(player, role);
+    for modifier in modifiers {
+        player = give_modifier(player, modifier);
+    }
     player.build()
 }
 
@@ -21,6 +24,13 @@ pub fn give_role<'a>(player: EntityBuilder<'a>, role: Role) -> EntityBuilder<'a>
         Role::Roleblocker => player.roleblocker(),
         Role::Goon        => player.goon(),
         Role::Godfather   => player.godfather(),
+    }
+}
+
+pub fn give_modifier<'a>(player: EntityBuilder<'a>, modifier: Modifier) -> EntityBuilder<'a> {
+    let player = player.with(modifier.clone());
+    match modifier {
+        Modifier::Breakthrough => player.breakthrough(),
     }
 }
 
