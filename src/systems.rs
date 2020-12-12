@@ -3,27 +3,30 @@ use specs::{ReadStorage, WriteStorage, Entities, System};
 use super::components::*;
 use super::components::attributes::*;
 
+/// Update targets of all living players from input
 pub struct UpdateTargets;
 impl<'a> System<'a> for UpdateTargets {
     type SystemData = (Entities<'a>,
                        ReadStorage<'a, Name>,
+                       ReadStorage<'a, Dead>,
                        WriteStorage<'a, Target>);
 
-    fn run(&mut self, (entities, names, mut targets): Self::SystemData) {
+    fn run(&mut self, (entities, names, dead, mut targets): Self::SystemData) {
         use specs::Join;
 
         let new_target_name = String::from("nastykast");
 
-        let new_target = (&entities, &names).join()
-            .find(|(_, name)| name.0 == new_target_name)
-            .map(|(entity, _)| entity);
+        let new_target = (&entities, &names, !&dead).join()
+            .find(|(_, name, ())| name.0 == new_target_name)
+            .map(|(entity, _, ())| entity);
 
-        for target in (&mut targets).join() {
+        for (target,()) in (&mut targets, !&dead).join() {
             target.0 = new_target;
         }
     }
 }
 
+/// Update the location of anyone with an active visiting action
 pub struct UpdateVisits;
 impl<'a> System<'a> for UpdateVisits {
     type SystemData = (Entities<'a>,
@@ -48,6 +51,7 @@ impl<'a> System<'a> for UpdateVisits {
     }
 }
 
+/// Process all block actions and give results as a `NightResult`
 pub struct BlockActions;
 impl<'a> System<'a> for BlockActions {
     type SystemData = (Entities<'a>,
@@ -87,6 +91,7 @@ impl<'a> System<'a> for BlockActions {
     }
 }
 
+/// Process all cop actions and give results as a `NightResult`
 pub struct CopActions;
 impl<'a> System<'a> for CopActions {
     type SystemData = (Entities<'a>,
@@ -117,6 +122,7 @@ impl<'a> System<'a> for CopActions {
     }
 }
 
+/// Process all detective actions and give results as a `NightResult`
 pub struct DetActions;
 impl<'a> System<'a> for DetActions {
     type SystemData = (Entities<'a>,
@@ -156,18 +162,21 @@ impl<'a> System<'a> for DetActions {
     }
 }
 
+/// Print night results
 pub struct PrintResults;
 impl<'a> System<'a> for PrintResults {
     type SystemData = (ReadStorage<'a, Name>,
                        ReadStorage<'a, Role>,
                        ReadStorage<'a, Target>,
-                       ReadStorage<'a, NightResult>);
+                       ReadStorage<'a, NightResult>,
+                       ReadStorage<'a, Dead>,
+                       ReadStorage<'a, LongDead>);
 
-    fn run(&mut self, (names, roles, targets, results): Self::SystemData) {
+    fn run(&mut self, (names, roles, targets, results, dead, longdead): Self::SystemData) {
         use specs::Join;
 
-        for (name, role, target, result) in 
-            (&names, &roles, &targets, &results).join() {
+        for (name, role, target, result, dead, ()) in 
+            (&names, &roles, &targets, &results, (&dead).maybe(), !&longdead).join() {
                 let target_name: String;
                 if let Some(ent) = target.0 {
                     target_name = names.get(ent).unwrap().0.clone();
@@ -175,6 +184,33 @@ impl<'a> System<'a> for PrintResults {
                     target_name = String::from("nobody");
                 }
                 println!("{} {} targets {} - {} - {}", role, name.0, target_name, if result.success { "success" } else { "fail" }, result.val);
+                if let Some(_) = dead {
+                    println!("{} {} died", role, name.0);
+                }
             }
+    }
+}
+
+/// Make the dead people (`Dead`) `LongDead` and set `Target`s of dead people to `None`
+pub struct ProcessDeaths;
+impl<'a> System<'a> for ProcessDeaths {
+    type SystemData = (Entities<'a>,
+                       ReadStorage<'a, Dead>,
+                       WriteStorage<'a, LongDead>,
+                       WriteStorage<'a, Target>);
+
+    fn run(&mut self, (entities, dead, mut longdead, mut targets): Self::SystemData) {
+        use specs::Join;
+
+        for (entity, _) in (&entities, &dead).join() {
+            if let None = longdead.get(entity) {
+                if let Err(e) = longdead.insert(entity, LongDead) {
+                    error!("error when making {:?} LongDead: {:?}", entity, e);
+                }
+                if let Err(e) = targets.insert(entity, Target(None)) {
+                    error!("error setting target of {:?} to None: {:?}", entity, e);
+                }
+            }
+        }
     }
 }

@@ -9,6 +9,7 @@ use scumsim::components::*;
 use scumsim::components::actions::*;
 use scumsim::components::attributes::*;
 use scumsim::systems::*;
+use scumsim::resources::*;
 
 fn main() {
     env_logger::init();
@@ -18,6 +19,7 @@ fn main() {
     world.register::<Gun>();
     world.register::<Kill>();
     world.register::<Modifier>();
+    world.insert(CurrentNight(Night::new(0)));
 
     let mut dispatcher = DispatcherBuilder::new()
         .with(UpdateTargets, "update_targets", &[])
@@ -26,6 +28,7 @@ fn main() {
         .with(CopActions, "cops", &["blockers"])
         .with(DetActions, "detectives", &["blockers"])
         .with(PrintResults, "results", &["cops", "detectives"])
+        .with(ProcessDeaths, "deaths", &["results"])
         .build();
 
     dispatcher.setup(&mut world);
