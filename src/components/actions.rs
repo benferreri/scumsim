@@ -16,4 +16,8 @@ pub struct Block;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
+pub struct Save;
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
 pub struct Kill;

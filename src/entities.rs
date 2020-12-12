@@ -22,6 +22,7 @@ pub fn give_role<'a>(player: EntityBuilder<'a>, role: Role) -> EntityBuilder<'a>
         Role::Sheriff     => player.cop().detective(),
         Role::Detective   => player.detective(),
         Role::Roleblocker => player.roleblocker(),
+        Role::Doctor      => player.doctor(),
         Role::Goon        => player.goon(),
         Role::Godfather   => player.godfather(),
     }
@@ -31,6 +32,7 @@ pub fn give_modifier<'a>(player: EntityBuilder<'a>, modifier: Modifier) -> Entit
     let player = player.with(modifier.clone());
     match modifier {
         Modifier::Breakthrough => player.breakthrough(),
+        Modifier::Macho        => player.macho(),
     }
 }
 
@@ -64,6 +66,7 @@ trait RoleBuilder {
     fn cop(self) -> Self;
     fn detective(self) -> Self;
     fn roleblocker(self) -> Self;
+    fn doctor(self) -> Self;
     fn goon(self) -> Self;
     fn godfather(self) -> Self;
 }
@@ -94,6 +97,12 @@ impl<'a> RoleBuilder for EntityBuilder<'a> {
             .with(actions::Block)
     }
 
+    fn doctor(self) -> Self {
+        self
+            .with(attributes::Visiting)
+            .with(actions::Save)
+    }
+
     fn goon(self) -> Self {
         self
             .with(Faction::Mafia)
@@ -115,11 +124,16 @@ impl<'a> RoleBuilder for EntityBuilder<'a> {
 
 trait ModifierBuilder {
     fn breakthrough(self) -> Self;
+    fn macho(self) -> Self;
 }
 
 impl<'a> ModifierBuilder for EntityBuilder<'a> {
     fn breakthrough(self) -> Self {
         self
             .with(attributes::Breakthrough)
+    }
+    fn macho(self) -> Self {
+        self
+            .with(attributes::Macho)
     }
 }

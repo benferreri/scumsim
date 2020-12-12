@@ -54,6 +54,7 @@ pub enum Role {
     Sheriff,
     Detective,
     Roleblocker,
+    Doctor,
     Goon,
     Godfather,
 }
@@ -62,4 +63,5 @@ pub enum Role {
 #[storage(VecStorage)]
 pub enum Modifier {
     Breakthrough,
+    Macho,
 }

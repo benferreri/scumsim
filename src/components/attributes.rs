@@ -19,6 +19,14 @@ pub struct Undetectable;
 
 #[derive(Component, Default, Debug)]
 #[storage(NullStorage)]
+pub struct Saved;
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
+pub struct Macho;
+
+#[derive(Component, Default, Debug)]
+#[storage(NullStorage)]
 pub struct Blocked;
 
 #[derive(Component, Default, Debug)]

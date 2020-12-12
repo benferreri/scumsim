@@ -1,7 +1,8 @@
 use log::error;
-use specs::{ReadStorage, WriteStorage, Entities, System};
+use specs::{Read,ReadStorage, WriteStorage, Entities, System};
 use super::components::*;
 use super::components::attributes::*;
+use super::resources::*;
 
 /// Update targets of all living players from input
 pub struct UpdateTargets;
@@ -157,6 +158,88 @@ impl<'a> System<'a> for DetActions {
             });
             if let Err(e) = res {
                 error!("error when {:?} gets det result: {:?}", entity, e);
+            }
+        }
+    }
+}
+
+/// Process all save actions and give results as a `NightResult`
+pub struct SaveActions;
+impl<'a> System<'a> for SaveActions {
+    type SystemData = (Entities<'a>,
+                       ReadStorage<'a, actions::Save>,
+                       ReadStorage<'a, Blocked>,
+                       ReadStorage<'a, Target>,
+                       ReadStorage<'a, Macho>,
+                       WriteStorage<'a, Saved>,
+                       WriteStorage<'a, NightResult>);
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, doctors, blocked, targets, macho, mut saved, mut results) = data;
+        use specs::Join;
+
+        for (entity, target, _, blocked) in (&entities, &targets, &doctors, (&blocked).maybe()).join() {
+            let success = match (blocked,target.0) {
+                (None,Some(target)) => {
+                    if let None = macho.get(target) {
+                        let res = saved.insert(target, Saved);
+                        if let Err(e) = res {
+                            error!("error when {:?} is saved: {:?}", target, e);
+                        }
+                        true
+                    } else {
+                        false
+                    }
+                }
+                (Some(_),_) | (_,None) => false,
+            };
+            let res = results.insert(entity, NightResult {
+                success,
+                val: String::from("n/a"),
+            });
+            if let Err(e) = res {
+                error!("error when {:?} gets save result: {:?}", entity, e);
+            }
+        }
+    }
+}
+
+/// Process all kill actions and give results as a `NightResult`
+pub struct KillActions;
+impl<'a> System<'a> for KillActions {
+    type SystemData = (Entities<'a>,
+                       Read<'a, CurrentNight>,
+                       ReadStorage<'a, actions::Kill>,
+                       ReadStorage<'a, Target>,
+                       ReadStorage<'a, Saved>,
+                       WriteStorage<'a, Dead>,
+                       WriteStorage<'a, NightResult>);
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, night, killers, targets, doctored, mut dead, mut results) = data;
+        use specs::Join;
+
+        for (entity, target, _) in (&entities, &targets, &killers).join() {
+            let success: bool;
+            if let Some(target) = target.0 {
+                if let Some(_) = doctored.get(target) {
+                    success = false;
+                } else {
+                    success = true;
+                    let res = dead.insert(target, Dead(night.0.clone()));
+                    if let Err(e) = res {
+                        error!("error when {:?} is killed: {:?}", target, e);
+                    }
+                }
+            } else {
+                success = false;
+            }
+            let res = results.insert(entity, NightResult {
+                success,
+                val: String::from("n/a"),
+            });
+            if let Err(e) = res {
+                error!("error when {:?} gets kill result: {:?}", entity, e);
             }
         }
     }
