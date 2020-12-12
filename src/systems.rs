@@ -1,5 +1,5 @@
 use log::error;
-use specs::{Read,ReadStorage, WriteStorage, Entities, System};
+use specs::{Read, Write, ReadStorage, WriteStorage, Entities, System};
 use super::components::*;
 use super::components::attributes::*;
 use super::resources::*;
@@ -10,12 +10,15 @@ impl<'a> System<'a> for UpdateTargets {
     type SystemData = (Entities<'a>,
                        ReadStorage<'a, Name>,
                        ReadStorage<'a, Dead>,
-                       WriteStorage<'a, Target>);
+                       WriteStorage<'a, Target>,
+                       Read<'a, CurrentNight>);
 
-    fn run(&mut self, (entities, names, dead, mut targets): Self::SystemData) {
+    fn run(&mut self, (entities, names, dead, mut targets, night): Self::SystemData) {
         use specs::Join;
 
-        let new_target_name = String::from("nastykast");
+        let new_target_name = String::from(
+            if night.0.0 > 0 {"nastykast"} else {"BlueMarble"}
+            );
 
         let new_target = (&entities, &names, !&dead).join()
             .find(|(_, name, ())| name.0 == new_target_name)
@@ -220,20 +223,20 @@ impl<'a> System<'a> for KillActions {
         use specs::Join;
 
         for (entity, target, _) in (&entities, &targets, &killers).join() {
-            let success: bool;
-            if let Some(target) = target.0 {
-                if let Some(_) = doctored.get(target) {
-                    success = false;
-                } else {
-                    success = true;
-                    let res = dead.insert(target, Dead(night.0.clone()));
-                    if let Err(e) = res {
-                        error!("error when {:?} is killed: {:?}", target, e);
+            let success = match (night.0.0, target.0) {
+                (0, _) | (_, None) => false,
+                (_, Some(target)) =>  {
+                    if let Some(_) = doctored.get(target) {
+                        false
+                    } else {
+                        let res = dead.insert(target, Dead(night.0.clone()));
+                        if let Err(e) = res {
+                            error!("error when {:?} is killed: {:?}", target, e);
+                        }
+                        true
                     }
-                }
-            } else {
-                success = false;
-            }
+                },
+            };
             let res = results.insert(entity, NightResult {
                 success,
                 val: String::from("n/a"),
@@ -248,16 +251,19 @@ impl<'a> System<'a> for KillActions {
 /// Print night results
 pub struct PrintResults;
 impl<'a> System<'a> for PrintResults {
-    type SystemData = (ReadStorage<'a, Name>,
+    type SystemData = (Read<'a, CurrentNight>,
+                       ReadStorage<'a, Name>,
                        ReadStorage<'a, Role>,
                        ReadStorage<'a, Target>,
                        ReadStorage<'a, NightResult>,
                        ReadStorage<'a, Dead>,
                        ReadStorage<'a, LongDead>);
 
-    fn run(&mut self, (names, roles, targets, results, dead, longdead): Self::SystemData) {
+    fn run(&mut self, data : Self::SystemData) {
+        let (night, names, roles, targets, results, dead, longdead) = data;
         use specs::Join;
 
+        println!("Night {} results:", night.0.0);
         for (name, role, target, result, dead, ()) in 
             (&names, &roles, &targets, &results, (&dead).maybe(), !&longdead).join() {
                 let target_name: String;
@@ -271,6 +277,27 @@ impl<'a> System<'a> for PrintResults {
                     println!("{} {} died", role, name.0);
                 }
             }
+    }
+}
+
+/// Remove Blocked, Saved, etc. component from anyone who received it tonight
+pub struct RemoveEffects;
+impl<'a> System<'a> for RemoveEffects {
+    type SystemData = (Entities<'a>,
+                       WriteStorage<'a, Blocked>,
+                       WriteStorage<'a, Saved>);
+
+    fn run(&mut self, (entities, mut blocked, mut saved): Self::SystemData) {
+        use specs::Join;
+
+        for entity in (&entities).join() {
+            if let Some(_) = blocked.get(entity) {
+                blocked.remove(entity);
+            }
+            if let Some(_) = saved.get(entity) {
+                saved.remove(entity);
+            }
+        }
     }
 }
 
@@ -295,5 +322,15 @@ impl<'a> System<'a> for ProcessDeaths {
                 }
             }
         }
+    }
+}
+
+/// Advance to the next Night
+pub struct FinishNight;
+impl <'a> System<'a> for FinishNight {
+    type SystemData = Write<'a, CurrentNight>;
+
+    fn run(&mut self, mut night: Self::SystemData) {
+        night.0 = Night(night.0.0 + 1);
     }
 }

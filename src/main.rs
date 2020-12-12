@@ -28,7 +28,9 @@ fn main() {
         .with(SaveActions, "doctors", &["cops", "detectives"])
         .with(KillActions, "killers", &["doctors"])
         .with(PrintResults, "results", &["killers"])
+        .with(RemoveEffects, "remove_effects", &["results"])
         .with(ProcessDeaths, "deaths", &["results"])
+        .with(FinishNight, "advance_night", &["deaths"])
         .build();
 
     dispatcher.setup(&mut world);
@@ -38,6 +40,8 @@ fn main() {
     create_player(&mut world, String::from("BlueMarble"), Faction::Town, Role::Doctor, vec![]);
     create_player(&mut world, String::from("TheFranswer"), Faction::Town, Role::Roleblocker, vec![]);
     
+    dispatcher.dispatch(&mut world);
+    world.maintain();
     dispatcher.dispatch(&mut world);
     world.maintain();
 }
