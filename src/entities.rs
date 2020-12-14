@@ -1,5 +1,5 @@
 use specs::{World,WorldExt,Entity,EntityBuilder,Builder};
-use super::components::{Name,Faction,Target,Position,Role,Modifier,actions,attributes};
+use super::components::{Name,Faction,Target,Position,Role,Modifier,Modifiers,actions,attributes};
 
 // certain roles will overwrite the faction
 // e.g. if trying to make a Town Goon, a Mafia Goon will instead be returned
@@ -8,9 +8,7 @@ pub fn create_player(world: &mut World, name: String, faction: Faction, role: Ro
         .base_player(name)
         .faction(faction);
     let mut player = give_role(player, role);
-    for modifier in modifiers {
-        player = give_modifier(player, modifier);
-    }
+    player = give_modifiers(player, modifiers);
     player.build()
 }
 
@@ -30,12 +28,15 @@ pub fn give_role<'a>(player: EntityBuilder<'a>, role: Role) -> EntityBuilder<'a>
     }
 }
 
-pub fn give_modifier<'a>(player: EntityBuilder<'a>, modifier: Modifier) -> EntityBuilder<'a> {
-    let player = player.with(modifier.clone());
-    match modifier {
-        Modifier::Breakthrough => player.breakthrough(),
-        Modifier::Macho        => player.macho(),
+pub fn give_modifiers<'a>(player: EntityBuilder<'a>, modifiers: Vec<Modifier>) -> EntityBuilder<'a> {
+    let mut player_upd = player;
+    for modifier in modifiers.iter() {
+        player_upd = match modifier {
+            Modifier::Breakthrough => player_upd.breakthrough(),
+            Modifier::Macho        => player_upd.macho(),
+        };
     }
+    player_upd.with(Modifiers(modifiers))
 }
 
 trait PlayerBuilder {

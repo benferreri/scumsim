@@ -343,6 +343,7 @@ pub struct PrintResults;
 impl<'a> System<'a> for PrintResults {
     type SystemData = (Read<'a, CurrentNight>,
                        ReadStorage<'a, Name>,
+                       ReadStorage<'a, Modifiers>,
                        ReadStorage<'a, Role>,
                        ReadStorage<'a, Target>,
                        ReadStorage<'a, NightResult>,
@@ -350,19 +351,26 @@ impl<'a> System<'a> for PrintResults {
                        ReadStorage<'a, LongDead>);
 
     fn run(&mut self, data : Self::SystemData) {
-        let (night, names, roles, targets, results, dead, longdead) = data;
+        let (night, names, modifiers, roles, targets, results, dead, longdead) = data;
         use specs::Join;
 
         println!("Night {} results:", night.0.0);
-        for (name, role, target, result, dead, ()) in 
-            (&names, &roles, &targets, &results, (&dead).maybe(), !&longdead).join() {
-                let target_name: String;
-                if let Some(ent) = target.0 {
-                    target_name = names.get(ent).unwrap().0.clone();
+        for (name, modifier, role, target, result, dead, ()) in 
+            (&names, &modifiers, &roles, &targets, &results, (&dead).maybe(), !&longdead).join() {
+                let target_name = if let Some(ent) = target.0 {
+                    names.get(ent).unwrap().0.clone()
                 } else {
-                    target_name = String::from("nobody");
+                    String::from("nobody")
+                };
+                let mut modifier = modifier.0
+                    .iter()
+                    .map(|modifier|modifier.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" ");
+                if modifier.len() > 0 {
+                    modifier.push(' ');
                 }
-                println!("{} {} targets {} - {} - {}", role, name.0, target_name, if result.success { "success" } else { "fail" }, result.val);
+                println!("{}{} {} targets {} - {} - {}", modifier, role, name.0, target_name, if result.success { "success" } else { "fail" }, result.val);
                 if let Some(_) = dead {
                     println!("{} {} died", role, name.0);
                 }

@@ -16,7 +16,6 @@ fn main() {
     let mut world = World::new();
     world.register::<Faction>();
     world.register::<Gun>();
-    world.register::<Modifier>();
     world.insert(CurrentNight(Night(0)));
 
     let mut dispatcher = DispatcherBuilder::new()
@@ -40,7 +39,7 @@ fn main() {
     create_player(&mut world, String::from("nastykast"), Faction::Town, Role::Cop, vec![Modifier::Breakthrough]);
     create_player(&mut world, String::from("Red123"), Faction::Mafia, Role::Godfather, vec![]);
     create_player(&mut world, String::from("BlueMarble"), Faction::Town, Role::Doctor, vec![]);
-    create_player(&mut world, String::from("TheFranswer"), Faction::Mafia, Role::Roleblocker, vec![]);
+    create_player(&mut world, String::from("TheFranswer"), Faction::Mafia, Role::Roleblocker, vec![Modifier::Macho]);
     create_player(&mut world, String::from("Chikbik"), Faction::Town, Role::Watcher, vec![]);
     create_player(&mut world, String::from("eastlondondon"), Faction::Town, Role::Tracker, vec![]);
     

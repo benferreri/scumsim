@@ -61,9 +61,12 @@ pub enum Role {
     Godfather,
 }
 
-#[derive(Component, Clone, Debug, Display)]
-#[storage(VecStorage)]
+#[derive(Clone, Debug, Display)]
 pub enum Modifier {
     Breakthrough,
     Macho,
 }
+
+#[derive(Component, Clone, Debug, Display)]
+#[storage(VecStorage)]
+pub struct Modifiers(pub Vec<Modifier>);
