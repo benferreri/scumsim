@@ -12,6 +12,14 @@ pub struct Detective;
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
+pub struct Track;
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
+pub struct Watch;
+
+#[derive(Component, Debug)]
+#[storage(VecStorage)]
 pub struct Block;
 
 #[derive(Component, Debug)]

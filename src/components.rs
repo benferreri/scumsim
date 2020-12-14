@@ -53,6 +53,8 @@ pub enum Role {
     Cop,
     Sheriff,
     Detective,
+    Tracker,
+    Watcher,
     Roleblocker,
     Doctor,
     Goon,

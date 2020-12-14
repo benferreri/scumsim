@@ -10,22 +10,35 @@ impl<'a> System<'a> for UpdateTargets {
     type SystemData = (Entities<'a>,
                        ReadStorage<'a, Name>,
                        ReadStorage<'a, Dead>,
+                       ReadStorage<'a, Faction>,
                        WriteStorage<'a, Target>,
                        Read<'a, CurrentNight>);
 
-    fn run(&mut self, (entities, names, dead, mut targets, night): Self::SystemData) {
+    fn run(&mut self, (entities, names, dead, factions, mut targets, night): Self::SystemData) {
         use specs::Join;
 
-        let new_target_name = String::from(
+        let new_target_name_maf = String::from(
             if night.0.0 > 0 {"nastykast"} else {"BlueMarble"}
-            );
+        );
 
-        let new_target = (&entities, &names, !&dead).join()
-            .find(|(_, name, ())| name.0 == new_target_name)
+        let new_target_name_town = String::from(
+            if night.0.0 > 0 {"TheFranswer"} else {"Red123"}
+        );
+
+        let new_target_maf = (&entities, &names, !&dead).join()
+            .find(|(_, name, ())| name.0 == new_target_name_maf)
             .map(|(entity, _, ())| entity);
 
-        for (target,()) in (&mut targets, !&dead).join() {
-            target.0 = new_target;
+        let new_target_town = (&entities, &names, !&dead).join()
+            .find(|(_, name, ())| name.0 == new_target_name_town)
+            .map(|(entity, _, ())| entity);
+
+        for (faction,target,()) in (&factions, &mut targets, !&dead).join() {
+            if let Faction::Town = faction {
+                target.0 = new_target_town;
+            } else {
+                target.0 = new_target_maf;
+            }
         }
     }
 }
@@ -161,6 +174,83 @@ impl<'a> System<'a> for DetActions {
             });
             if let Err(e) = res {
                 error!("error when {:?} gets det result: {:?}", entity, e);
+            }
+        }
+    }
+}
+
+/// Process all cop actions and give results as a `NightResult`
+pub struct TrackActions;
+impl<'a> System<'a> for TrackActions {
+    type SystemData = (Entities<'a>,
+                       ReadStorage<'a, actions::Track>,
+                       ReadStorage<'a, Blocked>,
+                       ReadStorage<'a, Target>,
+                       ReadStorage<'a, Position>,
+                       ReadStorage<'a, Name>,
+                       WriteStorage<'a, NightResult>);
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, trackers, blocked, targets, positions, names, mut results) = data;
+        use specs::Join;
+
+        for (entity, target, _, blocked) in (&entities, &targets, &trackers, (&blocked).maybe()).join() {
+            // if tracker is blocked or if there is no target, fail
+            let (success, pos) = match (blocked,target.0) {
+                (None,Some(target)) => {
+                    if let Some(pos) = positions.get(target).unwrap().0 {
+                        (true, names.get(pos).unwrap().0.clone())
+                    } else {
+                        (true, String::from("nowhere"))
+                    }
+                },
+                (Some(_),_) | (_,None) => (false, String::from("n/a")),
+            };
+            let res = results.insert(entity, NightResult {
+                success,
+                val: pos,
+            });
+            if let Err(e) = res {
+                error!("error when {:?} gets track result: {:?}", entity, e);
+            }
+        }
+    }
+}
+
+/// Process all watch actions and give results as a `NightResult`
+pub struct WatchActions;
+impl<'a> System<'a> for WatchActions {
+    type SystemData = (Entities<'a>,
+                       ReadStorage<'a, actions::Watch>,
+                       ReadStorage<'a, Blocked>,
+                       ReadStorage<'a, Target>,
+                       ReadStorage<'a, Position>,
+                       ReadStorage<'a, Name>,
+                       WriteStorage<'a, NightResult>);
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, watchers, blocked, targets, positions, names, mut results) = data;
+        use specs::Join;
+
+        for (entity, target, _, blocked) in (&entities, &targets, &watchers, (&blocked).maybe()).join() {
+            // if watcher is blocked or if there is no target, fail
+            let (success, visitors) = match (blocked,target.0) {
+                (None,Some(target)) => {
+                    let visitors = (&names, &positions).join()
+                        .filter(|(_, pos)| if let Some(pos) = pos.0 {pos == target} else {false})
+                        .map(|(name, _)| name.0.clone())
+                        .collect::<Vec<String>>()
+                        .join(", ");
+                    (true, visitors)
+                },
+                (Some(_),_) | (_,None) => (false, String::from("n/a")),
+            };
+            let res = results.insert(entity, NightResult {
+                success,
+                val: visitors,
+            });
+            if let Err(e) = res {
+                error!("error when {:?} gets cop result: {:?}", entity, e);
             }
         }
     }

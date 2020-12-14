@@ -25,7 +25,9 @@ fn main() {
         .with(BlockActions, "blockers", &["update_visits"])
         .with(CopActions, "cops", &["blockers"])
         .with(DetActions, "detectives", &["blockers"])
-        .with(SaveActions, "doctors", &["cops", "detectives"])
+        .with(TrackActions, "trackers", &["blockers"])
+        .with(WatchActions, "watchers", &["blockers"])
+        .with(SaveActions, "doctors", &["cops", "detectives", "trackers", "watchers"])
         .with(KillActions, "killers", &["doctors"])
         .with(PrintResults, "results", &["killers"])
         .with(RemoveEffects, "remove_effects", &["results"])
@@ -38,7 +40,9 @@ fn main() {
     create_player(&mut world, String::from("nastykast"), Faction::Town, Role::Cop, vec![Modifier::Breakthrough]);
     create_player(&mut world, String::from("Red123"), Faction::Mafia, Role::Godfather, vec![]);
     create_player(&mut world, String::from("BlueMarble"), Faction::Town, Role::Doctor, vec![]);
-    create_player(&mut world, String::from("TheFranswer"), Faction::Town, Role::Roleblocker, vec![]);
+    create_player(&mut world, String::from("TheFranswer"), Faction::Mafia, Role::Roleblocker, vec![]);
+    create_player(&mut world, String::from("Chikbik"), Faction::Town, Role::Watcher, vec![]);
+    create_player(&mut world, String::from("eastlondondon"), Faction::Town, Role::Tracker, vec![]);
     
     dispatcher.dispatch(&mut world);
     world.maintain();

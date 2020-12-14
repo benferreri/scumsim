@@ -21,6 +21,8 @@ pub fn give_role<'a>(player: EntityBuilder<'a>, role: Role) -> EntityBuilder<'a>
         Role::Cop         => player.cop(),
         Role::Sheriff     => player.cop().detective(),
         Role::Detective   => player.detective(),
+        Role::Tracker     => player.tracker(),
+        Role::Watcher     => player.watcher(),
         Role::Roleblocker => player.roleblocker(),
         Role::Doctor      => player.doctor(),
         Role::Goon        => player.goon(),
@@ -65,6 +67,8 @@ trait RoleBuilder {
     fn vanilla(self) -> Self;
     fn cop(self) -> Self;
     fn detective(self) -> Self;
+    fn tracker(self) -> Self;
+    fn watcher(self) -> Self;
     fn roleblocker(self) -> Self;
     fn doctor(self) -> Self;
     fn goon(self) -> Self;
@@ -89,6 +93,18 @@ impl<'a> RoleBuilder for EntityBuilder<'a> {
             .with(attributes::Visiting)
             .with(attributes::Gun)
             .with(actions::Detective)
+    }
+
+    fn tracker(self) -> Self {
+        self
+            .with(attributes::Visiting)
+            .with(actions::Track)
+    }
+
+    fn watcher(self) -> Self {
+        self
+            .with(attributes::Visiting)
+            .with(actions::Watch)
     }
 
     fn roleblocker(self) -> Self {
