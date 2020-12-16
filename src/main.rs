@@ -22,9 +22,10 @@ fn main() {
         .with(UpdateTargets, "update_targets", &[])
         .with(UpdateVisits, "update_visits", &["update_targets"])
         .with(BlockActions, "blockers", &["update_visits"])
-        .with(CopActions, "cops", &["blockers"])
-        .with(DetActions, "detectives", &["blockers"])
-        .with(TrackActions, "trackers", &["blockers"])
+        .with(InfoActions::<actions::Cop, Innocence, Uncoppable>::new(), "cops", &["blockers"])
+        .with(InfoActions::<actions::Detective, Role, Undetectable>::new(), "detectives", &["blockers"])
+        .with(InfoActions::<actions::Track, Position, Untrackable>::new(), "trackers", &["blockers"])
+        //.with(TrackActions, "trackers", &["blockers"])
         .with(WatchActions, "watchers", &["blockers"])
         .with(SaveActions, "doctors", &["cops", "detectives", "trackers", "watchers"])
         .with(KillActions, "killers", &["doctors"])
@@ -36,7 +37,7 @@ fn main() {
 
     dispatcher.setup(&mut world);
 
-    create_player(&mut world, String::from("nastykast"), Faction::Town, Role::Cop, vec![Modifier::Breakthrough]);
+    create_player(&mut world, String::from("nastykast"), Faction::Town, Role::Detective, vec![Modifier::Breakthrough]);
     create_player(&mut world, String::from("Red123"), Faction::Mafia, Role::Godfather, vec![]);
     create_player(&mut world, String::from("BlueMarble"), Faction::Town, Role::Doctor, vec![]);
     create_player(&mut world, String::from("TheFranswer"), Faction::Mafia, Role::Roleblocker, vec![Modifier::Macho]);

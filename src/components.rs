@@ -1,3 +1,4 @@
+use std::fmt;
 use std::fmt::Display;
 use derive_display_from_debug::Display;
 use specs::{Component, Entity, VecStorage, NullStorage};
@@ -38,6 +39,16 @@ pub struct Target(pub Option<Entity>);
 #[derive(Component, Debug)]
 #[storage(VecStorage)]
 pub struct Position(pub Option<Entity>);
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        if let Some(ent) = self.0 {
+            write!(f, "{:?}", ent)
+        } else {
+            write!(f, "nowhere")
+        }
+    }
+}
 
 #[derive(Component, Debug)]
 #[storage(VecStorage)]

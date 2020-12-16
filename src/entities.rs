@@ -1,5 +1,5 @@
 use specs::{World,WorldExt,Entity,EntityBuilder,Builder};
-use super::components::{Name,Faction,Target,Position,Role,Modifier,Modifiers,actions,attributes};
+use super::components::{Name,Faction,Target,Position,Role,Modifier,Modifiers,actions,actions::Action,attributes};
 
 // certain roles will overwrite the faction
 // e.g. if trying to make a Town Goon, a Mafia Goon will instead be returned
@@ -86,38 +86,38 @@ impl<'a> RoleBuilder for EntityBuilder<'a> {
         self
             .with(attributes::Visiting)
             .with(attributes::Gun)
-            .with(actions::Cop)
+            .with(actions::Cop::new())
     }
 
     fn detective(self) -> Self {
         self
             .with(attributes::Visiting)
             .with(attributes::Gun)
-            .with(actions::Detective)
+            .with(actions::Detective::new())
     }
 
     fn tracker(self) -> Self {
         self
             .with(attributes::Visiting)
-            .with(actions::Track)
+            .with(actions::Track::new())
     }
 
     fn watcher(self) -> Self {
         self
             .with(attributes::Visiting)
-            .with(actions::Watch)
+            .with(actions::Watch::new())
     }
 
     fn roleblocker(self) -> Self {
         self
             .with(attributes::Visiting)
-            .with(actions::Block)
+            .with(actions::Block::new())
     }
 
     fn doctor(self) -> Self {
         self
             .with(attributes::Visiting)
-            .with(actions::Save)
+            .with(actions::Save::new())
     }
 
     fn goon(self) -> Self {
@@ -125,7 +125,7 @@ impl<'a> RoleBuilder for EntityBuilder<'a> {
             .with(Faction::Mafia)
             .with(attributes::Visiting)
             .with(attributes::Gun)
-            .with(actions::Kill)
+            .with(actions::Kill::new())
     }
 
     fn godfather(self) -> Self {
@@ -134,7 +134,7 @@ impl<'a> RoleBuilder for EntityBuilder<'a> {
             .with(attributes::Visiting)
             .with(attributes::Innocence::Innocent)
             .with(attributes::Undetectable)
-            .with(actions::Kill)
+            .with(actions::Kill::new())
     }
 
 }

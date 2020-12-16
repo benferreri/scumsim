@@ -1,6 +1,8 @@
 use log::error;
-use specs::{Read, Write, ReadStorage, WriteStorage, Entities, System};
+use std::marker::PhantomData;
+use specs::{Component, Read, Write, ReadStorage, WriteStorage, Entities, System};
 use super::components::*;
+use super::components::actions::Action;
 use super::components::attributes::*;
 use super::resources::*;
 
@@ -108,6 +110,68 @@ impl<'a> System<'a> for BlockActions {
     }
 }
 
+pub struct InfoActions<A, I, S> where
+    A: Action + Component,
+    I: Component + std::fmt::Display,
+    S: ActionStopper + Component {
+        _action:  PhantomData<A>,
+        _info:    PhantomData<I>,
+        _stopper: PhantomData<S>,
+}
+
+impl<A, I, S> InfoActions<A, I, S> where 
+    A: Action + Component,
+    I: Component + std::fmt::Display,
+    S: ActionStopper + Component {
+
+    pub fn new() -> InfoActions<A,I,S> {
+        InfoActions {
+            _action: PhantomData,
+            _info: PhantomData,
+            _stopper: PhantomData,
+        }
+    }
+}
+
+impl<'a, A, I, S> System<'a> for InfoActions<A, I, S> where
+    A: Action + Component,
+    I: Component + std::fmt::Display,
+    S: ActionStopper + Component {
+    type SystemData = (Entities<'a>,
+                       ReadStorage<'a, A>,
+                       ReadStorage<'a, Blocked>,
+                       ReadStorage<'a, Target>,
+                       ReadStorage<'a, I>,
+                       ReadStorage<'a, S>,
+                       WriteStorage<'a, NightResult>);
+
+    fn run(&mut self, data: Self::SystemData) {
+        let (entities, actions, blocked, targets, info_storage, stoppers, mut results) = data;
+        use specs::Join;
+
+        for (entity, target, action, blocked) in (&entities, &targets, &actions, (&blocked).maybe()).join() {
+            // if cop is blocked or if there is no target, fail
+            let (success, info) = match (action.active(), blocked, target.0) {
+                (true, None,Some(target)) => {
+                    if let None = stoppers.get(target) {
+                        (true, info_storage.get(target).unwrap().to_string())
+                    } else {
+                        (false, String::from("n/a"))
+                    }
+                }
+                (true, Some(_), _) | (true, _, None) | (false, _, _) => (false, String::from("n/a")),
+            };
+            let res = results.insert(entity, NightResult {
+                success,
+                val: info,
+            });
+            if let Err(e) = res {
+                error!("error when {:?} gets result: {:?}", entity, e);
+            }
+        }
+    }
+}
+
 /// Process all cop actions and give results as a `NightResult`
 pub struct CopActions;
 impl<'a> System<'a> for CopActions {
@@ -122,11 +186,11 @@ impl<'a> System<'a> for CopActions {
         let (entities, cops, blocked, targets, inno_storage, mut results) = data;
         use specs::Join;
 
-        for (entity, target, _, blocked) in (&entities, &targets, &cops, (&blocked).maybe()).join() {
+        for (entity, target, cop, blocked) in (&entities, &targets, &cops, (&blocked).maybe()).join() {
             // if cop is blocked or if there is no target, fail
-            let (success, inno) = match (blocked,target.0) {
-                (None,Some(target)) => (true, inno_storage.get(target).unwrap().to_string()),
-                (Some(_),_) | (_,None) => (false, String::from("n/a")),
+            let (success, inno) = match (cop.active(), blocked, target.0) {
+                (true, None, Some(target)) => (true, inno_storage.get(target).unwrap().to_string()),
+                (true, Some(_), _) | (true, _, None) | (false, _, _) => (false, String::from("n/a")),
             };
             let res = results.insert(entity, NightResult {
                 success,
