@@ -37,12 +37,12 @@ fn main() {
 
     dispatcher.setup(&mut world);
 
-    create_player(&mut world, String::from("nastykast"), Faction::Town, Role::Detective, vec![Modifier::Breakthrough]);
-    create_player(&mut world, String::from("Red123"), Faction::Mafia, Role::Godfather, vec![]);
-    create_player(&mut world, String::from("BlueMarble"), Faction::Town, Role::Doctor, vec![]);
-    create_player(&mut world, String::from("TheFranswer"), Faction::Mafia, Role::Roleblocker, vec![Modifier::Macho]);
-    create_player(&mut world, String::from("Chikbik"), Faction::Town, Role::Watcher, vec![]);
-    create_player(&mut world, String::from("eastlondondon"), Faction::Town, Role::Tracker, vec![]);
+    create_player(&mut world, String::from("player1"), Faction::Town, Role::Detective, vec![Modifier::Breakthrough]);
+    create_player(&mut world, String::from("player2"), Faction::Mafia, Role::Godfather, vec![]);
+    create_player(&mut world, String::from("player3"), Faction::Town, Role::Doctor, vec![]);
+    create_player(&mut world, String::from("player4"), Faction::Mafia, Role::Roleblocker, vec![Modifier::Macho]);
+    create_player(&mut world, String::from("player5"), Faction::Town, Role::Watcher, vec![]);
+    create_player(&mut world, String::from("player6"), Faction::Town, Role::Tracker, vec![]);
     
     dispatcher.dispatch(&mut world);
     world.maintain();
